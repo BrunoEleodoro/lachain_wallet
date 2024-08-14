@@ -10,6 +10,7 @@ import 'package:walletconnect_flutter_v2_wallet/dependencies/bottom_sheet/i_bott
 import 'package:walletconnect_flutter_v2_wallet/dependencies/deep_link_handler.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/i_web3wallet_service.dart';
 import 'package:walletconnect_flutter_v2_wallet/pages/app_detail_page.dart';
+import 'package:walletconnect_flutter_v2_wallet/pages/swap_tokens_page.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/constants.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/eth_utils.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/string_constants.dart';
@@ -100,43 +101,228 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
   Widget build(BuildContext context) {
     _pairings = _web3Wallet.pairings.getAll();
     _pairings = _pairings.where((p) => p.active).toList();
-    return Stack(
-      children: [
-        _pairings.isEmpty ? _buildNoPairingMessage() : _buildPairingList(),
-        Positioned(
-          bottom: StyleConstants.magic20,
-          right: StyleConstants.magic20,
-          left: StyleConstants.magic20,
-          child: Row(
-            children: [
-              const SizedBox(width: StyleConstants.magic20),
-              _buildIconButton(Icons.copy, _onCopyQrCode),
-              const SizedBox(width: StyleConstants.magic20),
-              _buildIconButton(Icons.qr_code_rounded, _onScanQrCode),
-            ],
-          ),
-        ),
-        ValueListenableBuilder(
-          valueListenable: DeepLinkHandler.waiting,
-          builder: (context, value, _) {
-            return Visibility(
-              visible: value,
-              child: Center(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.all(Radius.circular(50.0)),
+    return Scaffold(
+      body: Stack(
+        children: [
+          // _pairings.isEmpty ? _buildNoPairingMessage() : _buildPairingList(),
+          // Positioned(
+          //   bottom: StyleConstants.magic20,
+          //   right: StyleConstants.magic20,
+          //   left: StyleConstants.magic20,
+          //   child: Row(
+          //     children: [
+          //       const SizedBox(width: StyleConstants.magic20),
+          //       _buildIconButton(Icons.copy, _onCopyQrCode),
+          //       // const SizedBox(width: StyleConstants.magic20),
+          //       // ,
+          //     ],
+          //   ),
+          // ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Olá, Bruno Eleodoro',
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    Icon(Icons.menu),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  padding: const EdgeInsets.all(12.0),
-                  child: const CircularProgressIndicator(
-                    color: Colors.white,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.account_balance_wallet, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Text('0x1234567....213213'),
+                      Icon(Icons.arrow_drop_down, color: Colors.purple),
+                    ],
                   ),
                 ),
-              ),
-            );
-          },
+                const SizedBox(height: 24),
+                const Text(
+                  'LAC 0,00',
+                  style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                ),
+                const Text(
+                  'US\$ 0,02',
+                  style: TextStyle(color: Colors.green),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildActionButton(Icons.send, 'Tokens'),
+                    _buildActionButton(Icons.arrow_downward, 'NFT'),
+                    _buildActionButton(Icons.refresh, 'Atividade'),
+                    _buildActionButton(Icons.qr_code_scanner, ''),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ripio',
+                        style: TextStyle(color: Colors.purple),
+                      ),
+                      Text(
+                        'Adquira LAC agora mesmo!',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Pela Ripio você pode comprar o seu LAC e transferir na mesma hora para sua carteira.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Conheça outras aplicações:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 36),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildAppIcon(
+                        Colors.blue,
+                        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwGTCh5mOfDPgsTKbfaWEJr8sYnvYRgeS6oQ&s',
+                        'SambaSwap'),
+                    _buildAppIcon(
+                        Colors.green,
+                        'https://taikai.azureedge.net/yuEPtUkCHI4OQo2ZvSu9Emv4Np3Ay0YNmucxKJ5qtig/rs:fit:350:0:0/aHR0cHM6Ly9zdG9yYWdlLmdvb2dsZWFwaXMuY29tL3RhaWthaS1zdG9yYWdlL2ltYWdlcy8xY2EwYzRmMC00Nzg3LTExZWYtYTUxZS01NzE3YWRjNjlmZTFpbWFnZSAyMy5wbmc',
+                        'Caramel'),
+                    _buildAppIcon(
+                        Colors.orange,
+                        'https://i.ibb.co/dQ5BZ0w/Screenshot-2024-08-13-at-18-20-33.png',
+                        'CapyFi'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          ValueListenableBuilder(
+            valueListenable: DeepLinkHandler.waiting,
+            builder: (context, value, _) {
+              return Visibility(
+                visible: value,
+                child: Center(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.black38,
+                      borderRadius: BorderRadius.all(Radius.circular(50.0)),
+                    ),
+                    padding: const EdgeInsets.all(12.0),
+                    child: const CircularProgressIndicator(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: _buildIconButton(Icons.qr_code_rounded, _onScanQrCode),
+        // rounded
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(50.0),
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, String label) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.purple.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.purple),
+        ),
+        SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 12)),
       ],
+    );
+  }
+
+  Widget _buildAppIcon(Color color, String imageUrl, String appName) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(_createRoute());
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+            child: ClipOval(
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            appName,
+            style: const TextStyle(fontSize: 12),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Route _createRoute() {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => SwapTokensPage(),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(0.0, 1.0);
+        const end = Offset.zero;
+        const curve = Curves.ease;
+
+        var tween =
+            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
+        );
+      },
     );
   }
 
@@ -170,21 +356,13 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
   }
 
   Widget _buildIconButton(IconData icon, void Function()? onPressed) {
-    return Container(
-      decoration: BoxDecoration(
-        color: StyleConstants.primaryColor,
-        borderRadius: BorderRadius.circular(
-          StyleConstants.linear48,
-        ),
+    return IconButton(
+      icon: Icon(
+        icon,
+        color: StyleConstants.titleTextColor,
       ),
-      child: IconButton(
-        icon: Icon(
-          icon,
-          color: StyleConstants.titleTextColor,
-        ),
-        iconSize: StyleConstants.linear24,
-        onPressed: onPressed,
-      ),
+      iconSize: StyleConstants.linear24,
+      onPressed: onPressed,
     );
   }
 

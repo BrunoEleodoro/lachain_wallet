@@ -33,6 +33,7 @@ dependencies:
   polkadart_keyring: ^0.4.3
   polkadart: ^0.4.6
   walletconnect_flutter_v2: ^2.3.1
+  flutter_launcher_icons: ^0.13.1
 
 dev_dependencies:
   flutter_test:
@@ -42,6 +43,12 @@ dev_dependencies:
   dependency_validator: ^3.2.2
 
   flutter_lints: ^2.0.0
+
+flutter_icons:
+  image_path: "./AppIcon.png" 
+  android: true
+  ios: true
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true

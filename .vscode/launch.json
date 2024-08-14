@@ -1,0 +1,15 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "lachain_wallet",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "args": ["--flavor=internal", "--dart-define=PROJECT_ID=3bd2c24308cacc6a68925788160c7409"]
+        },
+    ]
+}

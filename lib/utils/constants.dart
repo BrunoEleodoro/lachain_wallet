@@ -20,7 +20,7 @@ class StyleConstants {
   static const Color layerColor1NoAlpha = Color(0xFF141415);
   static const Color layerColor2 = Color.fromARGB(255, 65, 65, 71);
   static const Color layerBubbleColor2 = Color(0xFF798686);
-  static const Color layerTextColor2 = Color(0xFF141414);
+  static const Color layerTextColor2 = Color.fromRGBO(20, 20, 20, 1);
   static const Color layerColor3 = Color.fromARGB(255, 39, 42, 42);
   static const Color layerTextColor3 = Color(0xFF9EA9A9);
   static const Color layerColor4 = Color(0xFF153B47);
@@ -53,7 +53,7 @@ class StyleConstants {
 
   // Text styles
   static const TextStyle titleText = TextStyle(
-    color: Colors.grey,
+    color: Colors.white,
     fontSize: magic40,
     fontWeight: FontWeight.w600,
   );
@@ -68,12 +68,12 @@ class StyleConstants {
     fontWeight: FontWeight.w600,
   );
   static const TextStyle bodyTextBold = TextStyle(
-    color: Colors.grey,
+    color: Colors.white,
     fontSize: magic14,
     fontWeight: FontWeight.w900,
   );
   static const TextStyle bodyText = TextStyle(
-    color: Colors.grey,
+    color: Colors.white,
     fontSize: magic14,
     fontWeight: FontWeight.w400,
   );
@@ -87,7 +87,7 @@ class StyleConstants {
     fontWeight: FontWeight.w600,
   );
   static const TextStyle layerTextStyle3 = TextStyle(
-    color: Colors.black,
+    color: Colors.white,
     fontSize: magic14,
     fontWeight: FontWeight.w600,
   );

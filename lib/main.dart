@@ -35,7 +35,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: StringConstants.appTitle,
+      debugShowCheckedModeBanner: false,
       home: MyHomePage(),
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepPurple, brightness: Brightness.dark),
+        useMaterial3: true,
+      ),
     );
   }
 }
@@ -172,32 +179,34 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
 
     final web3Wallet = GetIt.I<IWeb3WalletService>().web3wallet;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _pageDatas[_selectedIndex].title,
-          style: const TextStyle(color: Colors.black),
-        ),
-        actions: [
-          const Text('Relay '),
-          CircleAvatar(
-            radius: 6.0,
-            backgroundColor: web3Wallet.core.relayClient.isConnected
-                ? Colors.green
-                : Colors.red,
-          ),
-          const SizedBox(width: 16.0),
-        ],
+      // appBar: AppBar(
+      //   title: Text(
+      //     _pageDatas[_selectedIndex].title,
+      //   ),
+      //   actions: [
+      //     const Text('Relay '),
+      //     CircleAvatar(
+      //       radius: 6.0,
+      //       backgroundColor: web3Wallet.core.relayClient.isConnected
+      //           ? Colors.green
+      //           : Colors.red,
+      //     ),
+      //     const SizedBox(width: 16.0),
+      //   ],
+      // ),
+      body: SafeArea(
+        child: AppsPage(),
       ),
-      body: BottomSheetListener(
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          children: navRail,
-        ),
-      ),
-      bottomNavigationBar:
-          MediaQuery.of(context).size.width < Constants.smallScreen
-              ? _buildBottomNavBar()
-              : null,
+      // body: BottomSheetListener(
+      //   child: Row(
+      //     mainAxisSize: MainAxisSize.max,
+      //     children: navRail,
+      //   ),
+      // ),
+      // bottomNavigationBar:
+      //     MediaQuery.of(context).size.width < Constants.smallScreen
+      //         ? _buildBottomNavBar()
+      //         : null,
     );
   }
 
