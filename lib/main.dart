@@ -16,6 +16,7 @@ import 'package:walletconnect_flutter_v2_wallet/dependencies/web3wallet_service.
 import 'package:walletconnect_flutter_v2_wallet/models/chain_data.dart';
 import 'package:walletconnect_flutter_v2_wallet/models/page_data.dart';
 import 'package:walletconnect_flutter_v2_wallet/pages/apps_page.dart';
+import 'package:walletconnect_flutter_v2_wallet/pages/create_wallet.dart';
 import 'package:walletconnect_flutter_v2_wallet/pages/settings_page.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/constants.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   DeepLinkHandler.initListener();
   runApp(const MyApp());
+  // Magic.instance = Magic("pk_live_495EA8B35999D1BF");
 }
 
 class MyApp extends StatelessWidget {
@@ -194,8 +196,11 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
       //     const SizedBox(width: 16.0),
       //   ],
       // ),
-      body: SafeArea(
-        child: AppsPage(),
+      body: Stack(
+        children: [
+          LaWalletScreen(),
+          // Magic.instance.relayer
+        ],
       ),
       // body: BottomSheetListener(
       //   child: Row(

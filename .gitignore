@@ -45,3 +45,6 @@ app.*.map.json
 
 # Run scripts
 *.sh
+
+# FVM Version Cache
+.fvm/

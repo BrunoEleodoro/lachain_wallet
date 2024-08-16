@@ -165,8 +165,8 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildActionButton(Icons.send, 'Tokens'),
-                    _buildActionButton(Icons.arrow_downward, 'NFT'),
+                    _buildActionButton(Icons.send, 'Enviar'),
+                    _buildActionButton(Icons.arrow_downward, 'Receber'),
                     _buildActionButton(Icons.refresh, 'Atividade'),
                     _buildActionButton(Icons.qr_code_scanner, ''),
                   ],

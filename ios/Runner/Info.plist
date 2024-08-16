@@ -68,5 +68,11 @@
     <false/>
     <key>FlutterDeepLinkingEnabled</key>
     <true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>metamask</string>
+		<string>rainbow</string>
+		<string>trust</string>
+	</array>
 </dict>
 </plist>
