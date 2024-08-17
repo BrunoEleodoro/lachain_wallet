@@ -12,6 +12,8 @@ import 'package:walletconnect_flutter_v2_wallet/dependencies/deep_link_handler.d
 import 'package:walletconnect_flutter_v2_wallet/dependencies/i_web3wallet_service.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/key_service/i_key_service.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/key_service/key_service.dart';
+import 'package:walletconnect_flutter_v2_wallet/dependencies/w3m_service/i_w3m_service.dart';
+import 'package:walletconnect_flutter_v2_wallet/dependencies/w3m_service/w3m_service.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/web3wallet_service.dart';
 import 'package:walletconnect_flutter_v2_wallet/models/chain_data.dart';
 import 'package:walletconnect_flutter_v2_wallet/models/page_data.dart';
@@ -73,7 +75,10 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
   Future<void> initialize() async {
     GetIt.I.registerSingleton<IBottomSheetService>(BottomSheetService());
     GetIt.I.registerSingleton<IKeyService>(KeyService());
-    GetIt.I.registerSingleton<IW3MService>(W3MService());
+    print('registering w3m service');
+    GetIt.I.registerSingleton<IW3mService>(W3mService());
+
+    await GetIt.I<IW3mService>().initializeW3MService();
 
     final web3WalletService = Web3WalletService();
     await web3WalletService.create();
@@ -201,7 +206,16 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
       // ),
       body: Stack(
         children: [
-          LaWalletScreen(),
+          FutureBuilder<void>(
+            future: GetIt.I<IW3mService>().initializeW3MService(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                return LaWalletScreen();
+              } else {
+                return CircularProgressIndicator();
+              }
+            },
+          ),
           // Magic.instance.relayer
         ],
       ),

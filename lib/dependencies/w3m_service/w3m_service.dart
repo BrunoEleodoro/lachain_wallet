@@ -9,6 +9,8 @@ import 'package:web3modal_flutter/web3modal_flutter.dart';
 
 class W3mService extends IW3mService {
   late W3MService _w3mService;
+  @override
+  W3MService get w3mService => _w3mService;
 
   @override
   Future<void> initializeW3MService() async {
@@ -60,8 +62,18 @@ class W3mService extends IW3mService {
     var apiUrl = "https://rpc2.mainnet.lachain.network";
     var httpClient = Client();
     var ethClient = Web3Client(apiUrl, httpClient);
-    return await ethClient.getBalance(
+    if (_w3mService.session == null) {
+      return EtherAmount.fromBigInt(
+        EtherUnit.wei,
+        BigInt.zero,
+      );
+    }
+    var balance = await ethClient.getBalance(
         EthereumAddress.fromHex(_w3mService.session?.address ?? ''));
+    return EtherAmount.fromBigInt(
+      EtherUnit.wei,
+      BigInt.parse(balance.toString()),
+    );
   }
 
   @override

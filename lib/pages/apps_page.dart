@@ -9,6 +9,7 @@ import 'package:walletconnect_flutter_v2/walletconnect_flutter_v2.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/bottom_sheet/i_bottom_sheet_service.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/deep_link_handler.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/i_web3wallet_service.dart';
+import 'package:walletconnect_flutter_v2_wallet/dependencies/w3m_service/i_w3m_service.dart';
 import 'package:walletconnect_flutter_v2_wallet/pages/app_detail_page.dart';
 import 'package:walletconnect_flutter_v2_wallet/pages/swap_tokens_page.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/constants.dart';
@@ -228,18 +229,15 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'LAC ',
-                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  // const Text(
-                  //   _w3mService.chainBalance.toJS,
-                  //   style: TextStyle(fontSize: 12),
-                  // ),
-                  const Text(
-                    'US\$ 0,02',
-                    style: TextStyle(color: Colors.green),
+                  FutureBuilder(
+                    future: GetIt.I<IW3mService>().getWalletBalance(),
+                    builder: (context, snapshot) {
+                      return Text(
+                        'LAC ${snapshot.data}',
+                        style: TextStyle(
+                            fontSize: 36, fontWeight: FontWeight.bold),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   Row(
