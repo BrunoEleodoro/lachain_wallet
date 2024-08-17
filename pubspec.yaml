@@ -36,6 +36,7 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   web3modal_flutter: ^3.3.1
   web3dart: ^2.7.3
+  pretty_qr_code: ^3.3.0
 
 dev_dependencies:
   flutter_test:

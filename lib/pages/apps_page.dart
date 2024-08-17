@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:fl_toast/fl_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:get_it_mixin/get_it_mixin.dart';
+import 'package:pretty_qr_code/pretty_qr_code.dart';
 import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog.dart';
 import 'package:walletconnect_flutter_v2/walletconnect_flutter_v2.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/bottom_sheet/i_bottom_sheet_service.dart';
@@ -32,60 +34,18 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
   late IWeb3WalletService _web3walletService;
   late IWeb3Wallet _web3Wallet;
   late W3MService _w3mService;
-  void _initializeW3MService() async {
-    // Add your own custom chain to chains presets list to show when using W3MNetworkSelectButton
-    // See https://docs.walletconnect.com/appkit/flutter/core/custom-chains
-
-    _w3mService = W3MService(
-      projectId: '3bd2c24308cacc6a68925788160c7409',
-      enableEmail: true,
-      metadata: const PairingMetadata(
-        name: 'AppKit Flutter Example',
-        description: 'AppKit Flutter Example',
-        url: 'https://walletconnect.com/',
-        icons: [
-          'https://docs.walletconnect.com/assets/images/web3modalLogo-2cee77e07851ba0a710b56d03d4d09dd.png'
-        ],
-        redirect: Redirect(
-          native: 'web3modalflutter://',
-          universal: 'https://walletconnect.com/appkit',
-        ),
-      ),
-    );
-
-    W3MChainPresets.chains.putIfAbsent(
-        '274',
-        () => W3MChainInfo(
-              chainId: '274',
-              chainName: 'LaChain',
-              namespace: 'lawallet',
-              rpcUrl: 'https://rpc1.mainnet.lachain.network',
-              tokenName: 'LAC',
-              blockExplorer: W3MBlockExplorer(
-                name: 'LaChain Explorer',
-                url: 'https://explorer.lachain.network/tx',
-              ),
-              chainIcon: '',
-            ));
-    await _w3mService.init();
-    _w3mService.selectChain(W3MChainInfo(
-      chainId: '274',
-      chainName: 'LaChain',
-      rpcUrl: 'https://rpc1.mainnet.lachain.network',
-      namespace: 'lawallet',
-      tokenName: 'LAC',
-    ));
-    getWalletBalance();
-    print(_w3mService.isConnected);
-    print('BALANCE');
-    print(_w3mService.chainBalance);
-    print(_w3mService.selectedWallet);
-  }
+  late QrImage qrImage;
 
   @override
   void initState() {
     super.initState();
-    _initializeW3MService();
+
+    final qrCode = QrCode(
+      8,
+      QrErrorCorrectLevel.H,
+    )..addData(GetIt.I<IW3mService>().session?.address ?? '');
+
+    qrImage = QrImage(qrCode);
 
     _web3walletService = GetIt.I<IWeb3WalletService>();
     _web3Wallet = _web3walletService.web3wallet;
@@ -128,24 +88,6 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
     setState(() {});
   }
 
-  Future<void> getWalletBalance() async {
-    // Get balance of wallet
-    print('getWalletBalance');
-    print('_w3mService.session?.address');
-    print(_w3mService.session?.address);
-    final result = await _w3mService.request(
-      chainId: '274',
-      request: SessionRequestParams(
-        method: 'eth_getBalance',
-        params: [
-          _w3mService.session?.address,
-          'latest',
-        ],
-      ),
-      topic: 'topic',
-    );
-  }
-
   void _onRelayClientMessage(MessageEvent? event) async {
     _refreshState(event);
     if (event != null) {
@@ -170,10 +112,19 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
     }
   }
 
+  String formatAddress(String address) {
+    if (address.length < 10) return address;
+    return address.substring(0, 6) +
+        '...' +
+        address.substring(address.length - 4);
+  }
+
   @override
   Widget build(BuildContext context) {
     _pairings = _web3Wallet.pairings.getAll();
     _pairings = _pairings.where((p) => p.active).toList();
+    var address = GetIt.I<IW3mService>().session?.address ?? '';
+    var formattedAddress = formatAddress(address);
 
     return SafeArea(
       child: Scaffold(
@@ -217,13 +168,13 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
                       color: Colors.purple.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.account_balance_wallet,
                             color: Colors.purple),
                         SizedBox(width: 8),
-                        Text('0x1234567....213213'),
+                        Text(formattedAddress),
                         Icon(Icons.arrow_drop_down, color: Colors.purple),
                       ],
                     ),
@@ -233,7 +184,7 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
                     future: GetIt.I<IW3mService>().getWalletBalance(),
                     builder: (context, snapshot) {
                       return Text(
-                        'LAC ${snapshot.data}',
+                        'LAC ${snapshot.data?.getInEther.toString()}',
                         style: TextStyle(
                             fontSize: 36, fontWeight: FontWeight.bold),
                       );
@@ -243,10 +194,14 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildActionButton(Icons.send, 'Enviar'),
-                      _buildActionButton(Icons.arrow_downward, 'Receber'),
-                      _buildActionButton(Icons.refresh, 'Atividade'),
-                      _buildActionButton(Icons.qr_code_scanner, ''),
+                      _buildActionButton(Icons.send, 'Enviar', () {
+                        _onScanQrCodeSend();
+                      }),
+                      _buildActionButton(Icons.arrow_downward, 'Receber', () {
+                        generateQrCode();
+                      }),
+                      _buildActionButton(Icons.refresh, 'Atividade', () {}),
+                      _buildActionButton(Icons.qr_code_scanner, '', () {}),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -334,20 +289,24 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.purple.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
+  Widget _buildActionButton(
+      IconData icon, String label, void Function()? onPressed) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.purple.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.purple),
           ),
-          child: Icon(icon, color: Colors.purple),
-        ),
-        SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12)),
-      ],
+          SizedBox(height: 4),
+          Text(label, style: TextStyle(fontSize: 12)),
+        ],
+      ),
     );
   }
 
@@ -451,6 +410,53 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
     );
     if (uri is String) {
       _onFoundUri(uri);
+    }
+  }
+
+  Future generateQrCode() async {
+    showDialog(
+      useSafeArea: true,
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Container(
+        padding: EdgeInsets.all(16),
+        width: double.infinity,
+        height: 300,
+        color: Colors.white,
+        child: Column(
+          children: [
+            PrettyQrView(
+              qrImage: qrImage,
+            ),
+            ElevatedButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(
+                      text: GetIt.I<IW3mService>().session?.address ?? ''));
+                },
+                child: Text('Copy')),
+            SizedBox(height: 16),
+            // close modal
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Close'))
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future _onScanQrCodeSend() async {
+    try {
+      QrBarCodeScannerDialog().getScannedQrBarCode(
+        context: context,
+        onCode: (value) {
+          if (!mounted) return;
+        },
+      );
+    } catch (e) {
+      debugPrint(e.toString());
     }
   }
 
