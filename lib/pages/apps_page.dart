@@ -16,6 +16,8 @@ import 'package:walletconnect_flutter_v2_wallet/utils/eth_utils.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/string_constants.dart';
 import 'package:walletconnect_flutter_v2_wallet/widgets/pairing_item.dart';
 import 'package:walletconnect_flutter_v2_wallet/widgets/uri_input_popup.dart';
+import 'package:web3modal_flutter/services/w3m_service/w3m_service.dart';
+import 'package:web3modal_flutter/web3modal_flutter.dart';
 
 class AppsPage extends StatefulWidget with GetItStatefulWidgetMixin {
   AppsPage({Key? key}) : super(key: key);
@@ -28,10 +30,62 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
   List<PairingInfo> _pairings = [];
   late IWeb3WalletService _web3walletService;
   late IWeb3Wallet _web3Wallet;
+  late W3MService _w3mService;
+  void _initializeW3MService() async {
+    // Add your own custom chain to chains presets list to show when using W3MNetworkSelectButton
+    // See https://docs.walletconnect.com/appkit/flutter/core/custom-chains
+
+    _w3mService = W3MService(
+      projectId: '3bd2c24308cacc6a68925788160c7409',
+      enableEmail: true,
+      metadata: const PairingMetadata(
+        name: 'AppKit Flutter Example',
+        description: 'AppKit Flutter Example',
+        url: 'https://walletconnect.com/',
+        icons: [
+          'https://docs.walletconnect.com/assets/images/web3modalLogo-2cee77e07851ba0a710b56d03d4d09dd.png'
+        ],
+        redirect: Redirect(
+          native: 'web3modalflutter://',
+          universal: 'https://walletconnect.com/appkit',
+        ),
+      ),
+    );
+
+    W3MChainPresets.chains.putIfAbsent(
+        '274',
+        () => W3MChainInfo(
+              chainId: '274',
+              chainName: 'LaChain',
+              namespace: 'lawallet',
+              rpcUrl: 'https://rpc1.mainnet.lachain.network',
+              tokenName: 'LAC',
+              blockExplorer: W3MBlockExplorer(
+                name: 'LaChain Explorer',
+                url: 'https://explorer.lachain.network/tx',
+              ),
+              chainIcon: '',
+            ));
+    await _w3mService.init();
+    _w3mService.selectChain(W3MChainInfo(
+      chainId: '274',
+      chainName: 'LaChain',
+      rpcUrl: 'https://rpc1.mainnet.lachain.network',
+      namespace: 'lawallet',
+      tokenName: 'LAC',
+    ));
+    getWalletBalance();
+    print(_w3mService.isConnected);
+    print('BALANCE');
+    print(_w3mService.chainBalance);
+    print(_w3mService.selectedWallet);
+  }
 
   @override
   void initState() {
     super.initState();
+    _initializeW3MService();
+
     _web3walletService = GetIt.I<IWeb3WalletService>();
     _web3Wallet = _web3walletService.web3wallet;
     _pairings = _web3Wallet.pairings.getAll();
@@ -73,6 +127,24 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
     setState(() {});
   }
 
+  Future<void> getWalletBalance() async {
+    // Get balance of wallet
+    print('getWalletBalance');
+    print('_w3mService.session?.address');
+    print(_w3mService.session?.address);
+    final result = await _w3mService.request(
+      chainId: '274',
+      request: SessionRequestParams(
+        method: 'eth_getBalance',
+        params: [
+          _w3mService.session?.address,
+          'latest',
+        ],
+      ),
+      topic: 'topic',
+    );
+  }
+
   void _onRelayClientMessage(MessageEvent? event) async {
     _refreshState(event);
     if (event != null) {
@@ -101,155 +173,164 @@ class AppsPageState extends State<AppsPage> with GetItStateMixin {
   Widget build(BuildContext context) {
     _pairings = _web3Wallet.pairings.getAll();
     _pairings = _pairings.where((p) => p.active).toList();
-    return Scaffold(
-      body: Stack(
-        children: [
-          // _pairings.isEmpty ? _buildNoPairingMessage() : _buildPairingList(),
-          // Positioned(
-          //   bottom: StyleConstants.magic20,
-          //   right: StyleConstants.magic20,
-          //   left: StyleConstants.magic20,
-          //   child: Row(
-          //     children: [
-          //       const SizedBox(width: StyleConstants.magic20),
-          //       _buildIconButton(Icons.copy, _onCopyQrCode),
-          //       // const SizedBox(width: StyleConstants.magic20),
-          //       // ,
-          //     ],
-          //   ),
-          // ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Olá, Bruno Eleodoro',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+
+    return SafeArea(
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // _pairings.isEmpty ? _buildNoPairingMessage() : _buildPairingList(),
+            // Positioned(
+            //   bottom: StyleConstants.magic20,
+            //   right: StyleConstants.magic20,
+            //   left: StyleConstants.magic20,
+            //   child: Row(
+            //     children: [
+            //       const SizedBox(width: StyleConstants.magic20),
+            //       _buildIconButton(Icons.copy, _onCopyQrCode),
+            //       // const SizedBox(width: StyleConstants.magic20),
+            //       // ,
+            //     ],
+            //   ),
+            // ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Olá, Bruno Eleodoro',
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                      Icon(Icons.menu),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    Icon(Icons.menu),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.account_balance_wallet,
+                            color: Colors.purple),
+                        SizedBox(width: 8),
+                        Text('0x1234567....213213'),
+                        Icon(Icons.arrow_drop_down, color: Colors.purple),
+                      ],
+                    ),
                   ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
+                  const SizedBox(height: 24),
+                  const Text(
+                    'LAC ',
+                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  // const Text(
+                  //   _w3mService.chainBalance.toJS,
+                  //   style: TextStyle(fontSize: 12),
+                  // ),
+                  const Text(
+                    'US\$ 0,02',
+                    style: TextStyle(color: Colors.green),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Icon(Icons.account_balance_wallet, color: Colors.purple),
-                      SizedBox(width: 8),
-                      Text('0x1234567....213213'),
-                      Icon(Icons.arrow_drop_down, color: Colors.purple),
+                      _buildActionButton(Icons.send, 'Enviar'),
+                      _buildActionButton(Icons.arrow_downward, 'Receber'),
+                      _buildActionButton(Icons.refresh, 'Atividade'),
+                      _buildActionButton(Icons.qr_code_scanner, ''),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'LAC 0,00',
-                  style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-                ),
-                const Text(
-                  'US\$ 0,02',
-                  style: TextStyle(color: Colors.green),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildActionButton(Icons.send, 'Enviar'),
-                    _buildActionButton(Icons.arrow_downward, 'Receber'),
-                    _buildActionButton(Icons.refresh, 'Atividade'),
-                    _buildActionButton(Icons.qr_code_scanner, ''),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ripio',
+                          style: TextStyle(color: Colors.purple),
+                        ),
+                        Text(
+                          'Adquira LAC agora mesmo!',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Pela Ripio você pode comprar o seu LAC e transferir na mesma hora para sua carteira.',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Conheça outras aplicações:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 36),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Text(
-                        'ripio',
-                        style: TextStyle(color: Colors.purple),
-                      ),
-                      Text(
-                        'Adquira LAC agora mesmo!',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        'Pela Ripio você pode comprar o seu LAC e transferir na mesma hora para sua carteira.',
-                        style: TextStyle(fontSize: 12),
-                      ),
+                      _buildAppIcon(
+                          Colors.blue,
+                          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwGTCh5mOfDPgsTKbfaWEJr8sYnvYRgeS6oQ&s',
+                          'SambaSwap'),
+                      _buildAppIcon(
+                          Colors.green,
+                          'https://taikai.azureedge.net/yuEPtUkCHI4OQo2ZvSu9Emv4Np3Ay0YNmucxKJ5qtig/rs:fit:350:0:0/aHR0cHM6Ly9zdG9yYWdlLmdvb2dsZWFwaXMuY29tL3RhaWthaS1zdG9yYWdlL2ltYWdlcy8xY2EwYzRmMC00Nzg3LTExZWYtYTUxZS01NzE3YWRjNjlmZTFpbWFnZSAyMy5wbmc',
+                          'Caramel'),
+                      _buildAppIcon(
+                          Colors.orange,
+                          'https://i.ibb.co/dQ5BZ0w/Screenshot-2024-08-13-at-18-20-33.png',
+                          'CapyFi'),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Conheça outras aplicações:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 36),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildAppIcon(
-                        Colors.blue,
-                        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwGTCh5mOfDPgsTKbfaWEJr8sYnvYRgeS6oQ&s',
-                        'SambaSwap'),
-                    _buildAppIcon(
-                        Colors.green,
-                        'https://taikai.azureedge.net/yuEPtUkCHI4OQo2ZvSu9Emv4Np3Ay0YNmucxKJ5qtig/rs:fit:350:0:0/aHR0cHM6Ly9zdG9yYWdlLmdvb2dsZWFwaXMuY29tL3RhaWthaS1zdG9yYWdlL2ltYWdlcy8xY2EwYzRmMC00Nzg3LTExZWYtYTUxZS01NzE3YWRjNjlmZTFpbWFnZSAyMy5wbmc',
-                        'Caramel'),
-                    _buildAppIcon(
-                        Colors.orange,
-                        'https://i.ibb.co/dQ5BZ0w/Screenshot-2024-08-13-at-18-20-33.png',
-                        'CapyFi'),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          ValueListenableBuilder(
-            valueListenable: DeepLinkHandler.waiting,
-            builder: (context, value, _) {
-              return Visibility(
-                visible: value,
-                child: Center(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.black38,
-                      borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                    ),
-                    padding: const EdgeInsets.all(12.0),
-                    child: const CircularProgressIndicator(
-                      color: Colors.white,
+            ValueListenableBuilder(
+              valueListenable: DeepLinkHandler.waiting,
+              builder: (context, value, _) {
+                return Visibility(
+                  visible: value,
+                  child: Center(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.black38,
+                        borderRadius: BorderRadius.all(Radius.circular(50.0)),
+                      ),
+                      padding: const EdgeInsets.all(12.0),
+                      child: const CircularProgressIndicator(
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {},
+          child: _buildIconButton(Icons.qr_code_rounded, _onScanQrCode),
+          // rounded
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(50.0),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: _buildIconButton(Icons.qr_code_rounded, _onScanQrCode),
-        // rounded
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(50.0),
         ),
       ),
     );

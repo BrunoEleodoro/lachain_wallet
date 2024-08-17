@@ -21,6 +21,8 @@ import 'package:walletconnect_flutter_v2_wallet/pages/settings_page.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/string_constants.dart';
+import 'package:web3modal_flutter/services/w3m_service/i_w3m_service.dart';
+import 'package:web3modal_flutter/services/w3m_service/w3m_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +73,7 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
   Future<void> initialize() async {
     GetIt.I.registerSingleton<IBottomSheetService>(BottomSheetService());
     GetIt.I.registerSingleton<IKeyService>(KeyService());
+    GetIt.I.registerSingleton<IW3MService>(W3MService());
 
     final web3WalletService = Web3WalletService();
     await web3WalletService.create();

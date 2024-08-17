@@ -4,8 +4,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:walletconnect_flutter_v2/apis/web3app/web3app.dart';
 import 'package:walletconnect_flutter_v2/walletconnect_flutter_v2.dart';
+import 'package:walletconnect_flutter_v2_wallet/pages/apps_page.dart';
 import 'package:web3modal_flutter/services/w3m_service/w3m_service.dart';
 import 'package:web3modal_flutter/web3modal_flutter.dart';
+import 'package:web3dart/web3dart.dart';
+import 'package:http/http.dart';
 
 class LaWalletScreen extends StatefulWidget {
   @override
@@ -24,14 +27,32 @@ class _LaWalletScreenState extends State<LaWalletScreen>
   void _initializeW3MService() async {
     // Add your own custom chain to chains presets list to show when using W3MNetworkSelectButton
     // See https://docs.walletconnect.com/appkit/flutter/core/custom-chains
-
+    Map<String, W3MNamespace> lachainNamespace = {
+      '274': const W3MNamespace(
+        chains: ['274'],
+        methods: [
+          'eth_sendTransaction',
+          'eth_signTransaction',
+          'eth_sign',
+          'eth_signTypedData',
+          'personal_sign',
+          'eth_getBalance',
+          'eth_getTransactionCount',
+          'eth_getBlockByNumber',
+        ],
+        events: ['accountsChanged', 'chainChanged', 'disconnect'],
+      ),
+    };
     _w3mService = W3MService(
       projectId: '3bd2c24308cacc6a68925788160c7409',
       enableEmail: true,
+      enableAnalytics: true,
+      requiredNamespaces: lachainNamespace,
+      optionalNamespaces: lachainNamespace,
       metadata: const PairingMetadata(
-        name: 'AppKit Flutter Example',
-        description: 'AppKit Flutter Example',
-        url: 'https://walletconnect.com/',
+        name: 'LaWallet',
+        description: 'LaWallet',
+        url: 'https://rpc2.mainnet.lachain.network',
         icons: [
           'https://docs.walletconnect.com/assets/images/web3modalLogo-2cee77e07851ba0a710b56d03d4d09dd.png'
         ],
@@ -41,30 +62,67 @@ class _LaWalletScreenState extends State<LaWalletScreen>
         ),
       ),
     );
+    try {
+      W3MChainInfo lachain = W3MChainInfo(
+        chainId: '274',
+        chainName: 'LaChain',
+        namespace: '274',
+        rpcUrl: 'https://rpc2.mainnet.lachain.network',
+        tokenName: 'LAC',
+        blockExplorer: W3MBlockExplorer(
+          name: 'LaChain Explorer',
+          url: 'https://explorer.lachain.network/tx',
+        ),
+        chainIcon: 'https://icons.duckduckgo.com/ip3/lachain.network.ico',
+      );
+      await _w3mService.init();
+      W3MChainPresets.chains.putIfAbsent('274', () => lachain);
+      await _w3mService.selectChain(lachain);
+      print('session');
+      print('namespace');
+      print(_w3mService.session?.namespaces);
+      print('raw json');
+      print(_w3mService.session?.toRawJson());
+      print('address');
+      print(_w3mService.session?.address);
+      print('chainId');
+      print(_w3mService.session?.chainId);
+      var apiUrl =
+          "https://rpc2.mainnet.lachain.network"; //Replace with your API
 
-    W3MChainPresets.chains.putIfAbsent(
-        '274',
-        () => W3MChainInfo(
-              chainId: '274',
-              chainName: 'LaChain',
-              namespace: 'lawallet',
-              rpcUrl: 'https://rpc.lachain.com',
-              tokenName: 'LAC',
-              blockExplorer: W3MBlockExplorer(
-                name: 'LaChain Explorer',
-                url: 'https://lachain.com/tx/',
-              ),
-              chainIcon: '',
-            ));
-    await _w3mService.init();
-    _w3mService.selectChain(W3MChainInfo(
-      chainId: '274',
-      chainName: 'LaChain',
-      rpcUrl: 'https://rpc.lachain.com',
-      namespace: 'lawallet',
-      tokenName: 'LAC',
-    ));
-    print(_w3mService.selectedWallet);
+      var httpClient = Client();
+      var ethClient = Web3Client(apiUrl, httpClient);
+      print(_w3mService.isConnected);
+      EtherAmount balance = await ethClient.getBalance(
+          EthereumAddress.fromHex(_w3mService.session?.address ?? ''));
+      print(balance.getValueInUnit(EtherUnit.ether));
+      // if (_w3mService.isConnected) {
+      //   Navigator.push(
+      //       context, MaterialPageRoute(builder: (context) => AppsPage()));
+      // }
+      print(_w3mService.web3App?.authKeys.toString());
+      _w3mService.web3App!.onSessionConnect.subscribe((event) {
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => AppsPage()));
+      });
+      getWalletBalance();
+      // _w3mService.addListener(() {
+      //   Navigator.push(
+      //       context, MaterialPageRoute(builder: (context) => AppsPage()));
+      // });
+      print('aaaa');
+      print(_w3mService.selectedWallet);
+    } catch (ex) {
+      print('ERRORRRRRR');
+      print(ex.toString());
+    }
+  }
+
+  Future<void> getWalletBalance() async {
+    // Get balance of wallet
+    print('getWalletBalance');
+    print('_w3mService.session?.address');
+    print(_w3mService.session?.address);
   }
 
   @override
@@ -157,7 +215,11 @@ class _LaWalletScreenState extends State<LaWalletScreen>
                               ),
                             ]
                           : [
-                              W3MAccountButton(service: _w3mService),
+                              Container(
+                                  decoration:
+                                      BoxDecoration(color: Colors.white),
+                                  child:
+                                      W3MAccountButton(service: _w3mService)),
                             ]),
                   Visibility(
                     // visible: !_w3mService.isConnected,
