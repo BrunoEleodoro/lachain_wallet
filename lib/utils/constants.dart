@@ -102,4 +102,14 @@ class StyleConstants {
     vertical: linear8,
     horizontal: linear8,
   );
+
+  static const Color secondaryColor = Color(0xFF1A1A1A);
+  static const Color grayColor = Color.fromARGB(255, 180, 180, 180);
+
+  // Text styles
+  static const TextStyle paragraph = TextStyle(
+    color: Colors.black,
+    fontSize: linear16,
+    fontWeight: FontWeight.w600,
+  );
 }

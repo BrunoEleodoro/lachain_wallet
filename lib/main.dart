@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:get_it/get_it.dart';
 import 'package:get_it_mixin/get_it_mixin.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/bottom_sheet/bottom_sheet_listener.dart';
@@ -16,15 +19,24 @@ import 'package:walletconnect_flutter_v2_wallet/dependencies/w3m_service/i_w3m_s
 import 'package:walletconnect_flutter_v2_wallet/dependencies/w3m_service/w3m_service.dart';
 import 'package:walletconnect_flutter_v2_wallet/dependencies/web3wallet_service.dart';
 import 'package:walletconnect_flutter_v2_wallet/models/chain_data.dart';
+import 'package:walletconnect_flutter_v2_wallet/models/chain_metadata.dart';
 import 'package:walletconnect_flutter_v2_wallet/models/page_data.dart';
 import 'package:walletconnect_flutter_v2_wallet/pages/apps_page.dart';
+import 'package:walletconnect_flutter_v2_wallet/pages/auth_page.dart';
+import 'package:walletconnect_flutter_v2_wallet/pages/connect_page.dart';
 import 'package:walletconnect_flutter_v2_wallet/pages/create_wallet.dart';
+import 'package:walletconnect_flutter_v2_wallet/pages/pairings_page.dart';
+import 'package:walletconnect_flutter_v2_wallet/pages/sessions_page.dart';
 import 'package:walletconnect_flutter_v2_wallet/pages/settings_page.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:walletconnect_flutter_v2_wallet/utils/crypto/helpers.dart';
 import 'package:walletconnect_flutter_v2_wallet/utils/string_constants.dart';
+import 'package:walletconnect_flutter_v2_wallet/widgets/event_widget.dart';
 import 'package:web3modal_flutter/services/w3m_service/i_w3m_service.dart';
 import 'package:web3modal_flutter/services/w3m_service/w3m_service.dart';
+
+import 'imports.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +75,8 @@ class MyHomePage extends StatefulWidget with GetItStatefulWidgetMixin {
 class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
   bool _initializing = true;
 
+  Web3App? _web3App;
+
   List<PageData> _pageDatas = [];
   int _selectedIndex = 0;
 
@@ -73,6 +87,57 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
   }
 
   Future<void> initialize() async {
+    String flavor = '-${const String.fromEnvironment('FLUTTER_APP_FLAVOR')}';
+    flavor = flavor.replaceAll('-production', '');
+    _web3App = Web3App(
+      core: Core(
+        projectId: '3bd2c24308cacc6a68925788160c7409',
+      ),
+      metadata: PairingMetadata(
+        name: 'Sample dApp Flutter',
+        description: 'WalletConnect\'s sample dapp with Flutter',
+        url: 'https://walletconnect.com/',
+        icons: [
+          'https://images.prismic.io/wallet-connect/65785a56531ac2845a260732_WalletConnect-App-Logo-1024X1024.png'
+        ],
+        redirect: Redirect(
+          native: 'wcflutterdapp$flavor://',
+          // universal: 'https://walletconnect.com',
+        ),
+      ),
+    );
+
+    _web3App!.core.addLogListener(_logListener);
+
+    // Register event handlers
+    _web3App!.core.relayClient.onRelayClientError.subscribe(
+      _relayClientError,
+    );
+    _web3App!.core.relayClient.onRelayClientConnect.subscribe(_setState);
+    _web3App!.core.relayClient.onRelayClientDisconnect.subscribe(_setState);
+    _web3App!.core.relayClient.onRelayClientMessage.subscribe(
+      _onRelayMessage,
+    );
+
+    _web3App!.onSessionPing.subscribe(_onSessionPing);
+    _web3App!.onSessionEvent.subscribe(_onSessionEvent);
+    _web3App!.onSessionUpdate.subscribe(_onSessionUpdate);
+    _web3App!.onSessionConnect.subscribe(_onSessionConnect);
+    _web3App!.onSessionAuthResponse.subscribe(_onSessionAuthResponse);
+
+    await _web3App!.init();
+
+    // Loop through all the chain data
+    for (final ChainMetadata chain in ChainData.allChains) {
+      // Loop through the events for that chain
+      for (final event in getChainEvents(chain.type)) {
+        _web3App!.registerEventHandler(
+          chainId: chain.chainId,
+          event: event,
+        );
+      }
+    }
+
     GetIt.I.registerSingleton<IBottomSheetService>(BottomSheetService());
     GetIt.I.registerSingleton<IKeyService>(KeyService());
     print('registering w3m service');
@@ -142,6 +207,26 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
           title: StringConstants.connectPageTitle,
           icon: Icons.swap_vert_circle_outlined,
         ),
+        PageData(
+          page: ConnectPage(web3App: _web3App!),
+          title: StringConstants.connectPageTitle,
+          icon: Icons.home,
+        ),
+        PageData(
+          page: PairingsPage(web3App: _web3App!),
+          title: StringConstants.pairingsPageTitle,
+          icon: Icons.vertical_align_center_rounded,
+        ),
+        PageData(
+          page: SessionsPage(web3App: _web3App!),
+          title: StringConstants.sessionsPageTitle,
+          icon: Icons.workspaces_filled,
+        ),
+        PageData(
+          page: AuthPage(web3App: _web3App!),
+          title: StringConstants.authPageTitle,
+          icon: Icons.lock,
+        ),
         // PageData(
         //   page: const Center(
         //     child: Text(
@@ -163,7 +248,51 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
     });
   }
 
+  void _onSessionConnect(SessionConnect? event) {
+    log('[SampleDapp] _onSessionConnect $event');
+  }
+
+  void _onSessionAuthResponse(SessionAuthResponse? response) {
+    log('[SampleDapp] _onSessionAuthResponse $response');
+  }
+
+  void _relayClientError(ErrorEvent? event) {
+    debugPrint('[SampleDapp] _relayClientError ${event?.error}');
+    _setState('');
+  }
+
   void _setState(dynamic args) => setState(() {});
+  @override
+  void dispose() {
+    // Unregister event handlers
+    _web3App!.core.removeLogListener(_logListener);
+
+    _web3App!.core.relayClient.onRelayClientError.unsubscribe(
+      _relayClientError,
+    );
+    _web3App!.core.relayClient.onRelayClientConnect.unsubscribe(_setState);
+    _web3App!.core.relayClient.onRelayClientDisconnect.unsubscribe(_setState);
+    _web3App!.core.relayClient.onRelayClientMessage.unsubscribe(
+      _onRelayMessage,
+    );
+
+    _web3App!.onSessionPing.unsubscribe(_onSessionPing);
+    _web3App!.onSessionEvent.unsubscribe(_onSessionEvent);
+    _web3App!.onSessionUpdate.unsubscribe(_onSessionUpdate);
+    _web3App!.onSessionConnect.subscribe(_onSessionConnect);
+    _web3App!.onSessionAuthResponse.subscribe(_onSessionAuthResponse);
+
+    super.dispose();
+  }
+
+  void _logListener(LogEvent event) {
+    if (event.level == Level.debug) {
+      // TODO send to mixpanel
+      log('[Mixpanel] ${event.message}');
+    } else {
+      debugPrint('[Logger] ${event.level.name}: ${event.message}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,34 +318,20 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
 
     final web3Wallet = GetIt.I<IWeb3WalletService>().web3wallet;
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text(
-      //     _pageDatas[_selectedIndex].title,
-      //   ),
-      //   actions: [
-      //     const Text('Relay '),
-      //     CircleAvatar(
-      //       radius: 6.0,
-      //       backgroundColor: web3Wallet.core.relayClient.isConnected
-      //           ? Colors.green
-      //           : Colors.red,
-      //     ),
-      //     const SizedBox(width: 16.0),
-      //   ],
-      // ),
-      body: Stack(
-        children: [
-          FutureBuilder<void>(
-            future: GetIt.I<IW3mService>().initializeW3MService(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done) {
-                return LaWalletScreen();
-              } else {
-                return CircularProgressIndicator();
-              }
-            },
+      appBar: AppBar(
+        // title: Text(
+        //   _pageDatas[_selectedIndex].title,
+        //   style: const TextStyle(color: Colors.black),
+        // ),
+        actions: [
+          const Text('Relay '),
+          CircleAvatar(
+            radius: 6.0,
+            backgroundColor: web3Wallet.core.relayClient.isConnected
+                ? Colors.green
+                : Colors.red,
           ),
-          // Magic.instance.relayer
+          const SizedBox(width: 16.0),
         ],
       ),
       // body: BottomSheetListener(
@@ -225,6 +340,7 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
       //     children: navRail,
       //   ),
       // ),
+      body: LaWalletScreen(),
       // bottomNavigationBar:
       //     MediaQuery.of(context).size.width < Constants.smallScreen
       //         ? _buildBottomNavBar()
@@ -257,7 +373,7 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
 
   Widget _buildNavigationRail() {
     return NavigationRail(
-      // backgroundColor: StyleConstants.backgroundColor,
+      backgroundColor: StyleConstants.backgroundColor,
       selectedIndex: _selectedIndex,
       onDestinationSelected: (int index) {
         setState(() {
@@ -274,5 +390,51 @@ class _MyHomePageState extends State<MyHomePage> with GetItStateMixin {
           )
           .toList(),
     );
+  }
+
+  void _onSessionPing(SessionPing? args) {
+    debugPrint('[SampleDapp] _onSessionPing $args');
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return EventWidget(
+          title: StringConstants.receivedPing,
+          content: 'Topic: ${args!.topic}',
+        );
+      },
+    );
+  }
+
+  void _onSessionEvent(SessionEvent? args) {
+    debugPrint('[SampleDapp] _onSessionEvent $args');
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return EventWidget(
+          title: StringConstants.receivedEvent,
+          content:
+              'Topic: ${args!.topic}\nEvent Name: ${args.name}\nEvent Data: ${args.data}',
+        );
+      },
+    );
+  }
+
+  void _onSessionUpdate(SessionUpdate? args) {
+    debugPrint('[SampleDapp] _onSessionUpdate $args');
+  }
+
+  void _onRelayMessage(MessageEvent? args) async {
+    if (args != null) {
+      try {
+        final payloadString = await _web3App!.core.crypto.decode(
+          args.topic,
+          args.message,
+        );
+        final data = jsonDecode(payloadString ?? '{}') as Map<String, dynamic>;
+        debugPrint('[SampleDapp] _onRelayMessage data $data');
+      } catch (e) {
+        debugPrint('[SampleDapp] _onRelayMessage error $e');
+      }
+    }
   }
 }

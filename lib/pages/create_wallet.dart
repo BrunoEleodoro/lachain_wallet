@@ -189,7 +189,7 @@ class _LaWalletScreenState extends State<LaWalletScreen>
           Positioned(
             left: 0,
             right: 0,
-            bottom: 80,
+            bottom: 50,
             child: FadeTransition(
               opacity: _fadeInAnimation,
               child: Padding(

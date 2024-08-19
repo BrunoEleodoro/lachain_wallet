@@ -63,4 +63,12 @@ class StringConstants {
   static const String sessions = 'Sessions';
   static const String noSessionSelected = 'No session selected';
   static const String sessionTopic = 'Session Topic: ';
+
+  // Main Page
+  static const String receivedPing = 'Received Ping';
+  static const String receivedEvent = 'Received Event';
+
+  // Connect Page\
+  static const String copiedToClipboard = 'Copied to clipboard';
+  static const String connectionRejected = 'Connection rejected by user';
 }
